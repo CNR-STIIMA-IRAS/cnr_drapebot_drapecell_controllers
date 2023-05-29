@@ -1,6 +1,6 @@
-# cnr_drapebot_drapecell
+# cnr_drapebot_drapecell_controllers
 
-A collection of packages dedicated to configure and simulate the DrapeBot Drapecell hosted @Profactor.
+A collection of ROS controllers dedicated to configure and simulate the DrapeBot Drapecell hosted @Profactor.
 
 # dependencies
 
