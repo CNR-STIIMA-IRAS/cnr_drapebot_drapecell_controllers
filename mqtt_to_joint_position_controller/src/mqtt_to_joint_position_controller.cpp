@@ -51,6 +51,11 @@ namespace drapebot_controller
 
   MQTTToPositionController::~MQTTToPositionController()
   {
+    /////
+    file_stream_.close();
+    delete command_pub_;
+    ////
+    
     delete mqtt_drapebot_client_;  
   }
 
@@ -59,6 +64,11 @@ namespace drapebot_controller
   {
     try
     {
+      /////
+      command_pub_ = new realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>(n, "command", 4);
+      file_stream_.open("C:\\ws\\drapebot_ws\\data\\log_egm.csv");
+      /////
+
       ctrl_.init(hw,n); 
 
       // ---- MQTT params ----
@@ -144,6 +154,8 @@ namespace drapebot_controller
   
   void MQTTToPositionController::update(const ros::Time& time, const ros::Duration& period)
   {
+    std::chrono::high_resolution_clock::time_point time_start_update = std::chrono::high_resolution_clock::now();
+ 
     if (first_cycle_)
     {
       first_cycle_ = false;
@@ -189,15 +201,21 @@ namespace drapebot_controller
         return;
       }
     }
-       
+
+    std::chrono::high_resolution_clock::time_point time_point_1 = std::chrono::high_resolution_clock::now();
+
     // Read the new MQTT message and send the command to the robot
     memset(&command_from_mqtt_,0x0,sizeof(cnr::drapebot::drapebot_msg));
-
-    if (!mqtt_drapebot_client_->getLastReceivedMessage(command_from_mqtt_))
+        
+    if (!mqtt_drapebot_client_->isFirstMsgRec() || !mqtt_drapebot_client_->getLastReceivedMessage(command_from_mqtt_) )
     {
-      ROS_ERROR_THROTTLE(2.0,"Can't recover the last received message");
+      ROS_WARN_THROTTLE(2.0,"Can't recover the last received message OR first message not received yet.");
+      ctrl_.commands_buffer_.writeFromNonRT(j_pos_command_);
+      ctrl_.update(time,period);
       return;
     }
+
+    std::chrono::high_resolution_clock::time_point time_point_2 = std::chrono::high_resolution_clock::now();
 
     for (size_t i=0; i<(MSG_AXES_LENGTH-1); i++)
       j_pos_command_[i] =  command_from_mqtt_.joints_values_[i]; 
@@ -210,12 +228,57 @@ namespace drapebot_controller
       loss_packages_ += delta_package;
     }
     
-    ROS_WARN_STREAM_THROTTLE(2.0, "Lost packages: " << loss_packages_ );
-
     counter_ = command_from_mqtt_.counter_;
   
     ctrl_.commands_buffer_.writeFromNonRT(j_pos_command_);
     ctrl_.update(time,period);
+
+    std::chrono::high_resolution_clock::time_point time_point_3 = std::chrono::high_resolution_clock::now();
+
+    // Only for debug 
+    std::vector<double> joint_states_(6);
+    
+    for (size_t i=0; i<(MSG_AXES_LENGTH-1); i++)
+      joint_states_.at(i) = ctrl_.joints_.at(i).getPosition(); 
+
+    if (command_pub_->trylock())
+    {
+      command_pub_->msg_.data.clear();
+      for(const double& j_pos : j_pos_command_)
+        command_pub_->msg_.data.push_back(j_pos);
+
+      command_pub_->unlockAndPublish();
+    }
+
+    std::chrono::high_resolution_clock::time_point time_point_4 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::high_resolution_clock::time_point time_end_update = std::chrono::high_resolution_clock::now();
+    
+    auto delta_time_update_ = std::chrono::duration_cast<std::chrono::microseconds>(time_end_update - time_start_update ).count();
+    auto delta_time_1_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_1 - time_start_update ).count();
+    auto delta_time_2_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_2 - time_point_1 ).count();
+    auto delta_time_3_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_3 - time_point_2 ).count();
+    auto delta_time_4_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_4 - time_point_3 ).count();
+
+    // write on file
+    file_stream_ << j_pos_command_.at(0) << " "
+                 << j_pos_command_.at(1) << " "
+                 << j_pos_command_.at(2) << " "
+                 << j_pos_command_.at(3) << " "
+                 << j_pos_command_.at(4) << " "
+                 << j_pos_command_.at(5) << " "
+                 << joint_states_.at(0) << " "
+                 << joint_states_.at(1) << " "
+                 << joint_states_.at(2) << " "
+                 << joint_states_.at(3) << " "
+                 << joint_states_.at(4) << " "
+                 << joint_states_.at(5) << " " 
+                 << delta_time_update_ << " " 
+                 << delta_time_1_ << " " 
+                 << delta_time_2_ << " " 
+                 << delta_time_3_ << " " 
+                 << delta_time_4_ << " " << std::endl;
+    ///
   }
     
 

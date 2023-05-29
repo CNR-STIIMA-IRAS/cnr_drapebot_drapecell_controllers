@@ -39,6 +39,10 @@
 #define __DRAPEBOT_MQTT_CLIENT__
 
 #include <mutex>
+#include <ctime>
+#include <chrono>
+#include <fstream>
+
 #include <cnr_mqtt_client/cnr_mqtt_client.h>
 
 #define MAX_PAYLOAD_SIZE 1024
@@ -63,12 +67,19 @@ namespace cnr
     class DrapebotMsgDecoder: public cnr::mqtt::MsgDecoder
     {
     public:
-      DrapebotMsgDecoder(cnr::drapebot::drapebot_msg* mqtt_msg): mqtt_msg_(mqtt_msg) {};
+      DrapebotMsgDecoder(cnr::drapebot::drapebot_msg* mqtt_msg): mqtt_msg_(mqtt_msg), first_message_rec_(false) {};
       
       // The method should be reimplemented on the base of the application
       void on_message(const struct mosquitto_message *msg) override;
+      bool isFirstMsgRec(){return first_message_rec_;};
+
+      // Only for debug
+      std::chrono::high_resolution_clock::time_point time_on_msg_;
+      //
+
     private:
       cnr::drapebot::drapebot_msg* mqtt_msg_;
+      bool first_message_rec_;
     };
 
     class DrapebotMsgEncoder: public cnr::mqtt::MsgEncoder
@@ -78,6 +89,7 @@ namespace cnr
       
       // The method should be reimplemented on the base of the application
       void on_publish(int mid) override;
+
     private:
       cnr::drapebot::drapebot_msg* mqtt_msg_;
     };
@@ -95,7 +107,12 @@ namespace cnr
       int unsubscribe(int *mid, const char *sub);
       int publish(const void* payload, int& payload_len, const char* topic_name);
      
+      bool isFirstMsgRec(){ return drapebot_msg_decoder_->isFirstMsgRec(); };
       bool getLastReceivedMessage(cnr::drapebot::drapebot_msg& last_msg);
+
+      // Only for debug
+      std::ofstream file_stream_time_;
+      //
     
     private:
       cnr::drapebot::DrapebotMsgDecoder* drapebot_msg_decoder_;
@@ -105,6 +122,7 @@ namespace cnr
       cnr::drapebot::drapebot_msg* mqtt_msg_dec_;            
 
       cnr::mqtt::MQTTClient* mqtt_client_;
+
     };
   }
 
