@@ -1,0 +1,9 @@
+<library path="lib/libegm_joint_state_to_mqtt_controller">
+
+  <class name="position_controllers/EgmJointStateToMQTTController" type="drapebot_controller::EgmJointStateToMQTTController" base_class_type="controller_interface::ControllerBase">
+    <description>
+      The EgmJointStateToMQTTController tracks the JointState given by EGM and publish the data on MQTT. It expects a MQTTToPositionController type of hardware interface.
+    </description>
+  </class>
+
+</library>

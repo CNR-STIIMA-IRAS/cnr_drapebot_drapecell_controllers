@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="debug" default="false"/>
+  <arg name="robot_ip" default="192.168.125.1" doc="The robot controller's IP address"/>
+  
+  <arg if="$(arg debug)" name="launch_prefix" default="xterm -e gdb -ex run  --args" />
+  <!-- Set output verbosity level -->
+  
+  <!-- <env name="ROSCONSOLE_CONFIG_FILE" value="$(find drapecell_robot_bringup)/config/rosconsole.conf"/> -->
+
+  <!-- ============================================================================================================= -->
+  <!-- Robot Web Services (RWS) related components.                                                                  -->
+  <!-- ============================================================================================================= -->
+
+  <!-- RWS state publisher (i.e. general states about the robot controller) -->
+  <include file="$(find abb_rws_state_publisher)/launch/rws_state_publisher.launch">
+    <arg name="robot_ip" value="$(arg robot_ip)"/>
+  </include>
+
+  <!-- RWS service provider (i.a. starting/stopping the robot controller's RAPID execution) -->
+  <include file="$(find abb_rws_service_provider)/launch/rws_service_provider.launch">
+    <arg name="robot_ip" value="$(arg robot_ip)"/>
+  </include>
+
+  <!-- ============================================================================================================= -->
+  <!-- Externally Guided Motion (EGM) related components.                                                            -->
+  <!--                                                                                                               -->
+  <!-- Notes:                                                                                                        -->
+  <!-- * This example assumes that a 6-axes robot is used.                                                           -->
+  <!-- * An EGM session must be in running mode before starting 'ros_control' controllers that command motions.      -->
+  <!-- ============================================================================================================= -->
+
+  <!-- Put 'ros_control' components in the "egm" namespace (to match the hardware interface) -->
+  <group ns="egm">
+    <!-- Load configurations for 'ros_control' controllers on the parameter server -->
+    <rosparam file="$(find drapecell_robot_bringup)/config/drapecell_controllers.yaml" command="load"/>
+<!--     <rosparam file="$(find mqtt_to_joint_position_controller)/config/mqtt_config.yaml" command="load"/> -->
+
+    <!-- Two 'ros_control' controller spawners (stopped for the controller that command motions) -->
+    <node pkg="controller_manager" type="spawner" name="started" args="egm_joint_state_to_mqtt_controller egm_state_controller  joint_state_controller" output="screen"/>   
+	<node pkg="controller_manager" type="spawner" name="stopped_mqtt_to_pos_ctrl" args="--stopped mqtt_to_joint_position_controller" output="screen"/> 
+    <node pkg="controller_manager" type="spawner" name="stopped_pos_ctrl" args="--stopped j_pos_ctrl" output="screen"/>
+    <node pkg="controller_manager" type="spawner" name="stopped_vel_ctrl" args="--stopped j_vel_ctrl" output="screen"/>
+  </group>
+
+  <!-- EGM hardware interface (i.e. 'ros_control'-based interface for interacting with mechanical units) -->
+  <include file="$(find abb_egm_hardware_interface)/launch/egm_hardware_interface.launch">
+    <arg name="base_config_file" value="$(find drapecell_robot_bringup)/config/drapecell_hardware_base.yaml"/>
+    <arg name="egm_config_file" value="$(find drapecell_robot_bringup)/config/drapecell_hardware_egm.yaml"/>
+  </include>
+
+
+</launch>

@@ -1,0 +1,9 @@
+<library path="lib/libmqtt_to_joint_position_controller">
+
+  <class name="position_controllers/MQTTToPositionController" type="drapebot_controller::MQTTToPositionController" base_class_type="controller_interface::ControllerBase">
+    <description>
+      The MQTTToPositionController tracks position commands for a set of joints. It expects a MQTTToPositionController type of hardware interface.
+    </description>
+  </class>
+
+</library>
