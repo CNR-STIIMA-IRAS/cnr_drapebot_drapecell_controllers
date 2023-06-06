@@ -36,6 +36,11 @@
 #ifndef __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 #define __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 
+#ifdef WIN32
+  #include <windows.h>
+  #include <tchar.h> 
+#endif
+
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>

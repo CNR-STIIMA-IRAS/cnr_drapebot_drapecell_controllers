@@ -9,3 +9,7 @@ A collection of ROS controllers dedicated to configure and simulate the DrapeBot
 - [abb_librws](https://github.com/enricovillagrossi/abb_librws)
 - [abb_egm_rws_managers](https://github.com/enricovillagrossi/abb_egm_rws_managers)
 - [abb_robot_driver_interfaces](https://github.com/ros-industrial/abb_robot_driver_interfaces) 
+
+NOTE:
+
+Tested only in Windows.

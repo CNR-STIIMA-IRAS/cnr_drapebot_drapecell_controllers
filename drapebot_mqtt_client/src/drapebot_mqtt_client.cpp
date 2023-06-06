@@ -215,7 +215,7 @@ namespace  cnr
 
             std::chrono::high_resolution_clock::time_point time_msg_consumed = std::chrono::high_resolution_clock::now();
             auto delta_time_ = std::chrono::duration_cast<std::chrono::microseconds>(time_msg_consumed - drapebot_msg_decoder_->time_on_msg_ ).count();
-            ROS_WARN_STREAM_THROTTLE(2.0,"Delta time between last message received from MQTT at the time when the message is used:  " << 
+            ROS_WARN_STREAM_THROTTLE(0.5,"Delta time between last message received from MQTT at the time when the message is used:  " << 
                              delta_time_ << "  milliseconds" );
             
             file_stream_time_ << delta_time_ << "  "

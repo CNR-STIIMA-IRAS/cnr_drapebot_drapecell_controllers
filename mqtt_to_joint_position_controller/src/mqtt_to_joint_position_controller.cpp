@@ -62,6 +62,11 @@ namespace drapebot_controller
 
   bool MQTTToPositionController::init(hardware_interface::PositionJointInterface* hw, ros::NodeHandle& n)
   {
+    #ifdef WIN32  
+      //ROS_WARN_STREAM("GetCurrentProcess()   " << GetCurrentProcess());
+      //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) 
+    #endif
+
     try
     {
       /////
@@ -154,6 +159,12 @@ namespace drapebot_controller
   
   void MQTTToPositionController::update(const ros::Time& time, const ros::Duration& period)
   {
+
+    #ifdef WIN32  
+      //ROS_WARN_STREAM("GetCurrentProcess()   " << GetCurrentProcess());
+      //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) 
+    #endif
+
     std::chrono::high_resolution_clock::time_point time_start_update = std::chrono::high_resolution_clock::now();
  
     if (first_cycle_)
@@ -170,7 +181,7 @@ namespace drapebot_controller
       return;
     }
 
-    int rc = mqtt_drapebot_client_->loop(4);
+    int rc = mqtt_drapebot_client_->loop(1); //2023.06.06 Enrico Changed timeout from 4ms to 1 -> no timeout, immediate return
     if ( rc != 0 )
     {
       ROS_WARN_STREAM_THROTTLE(2.0,"Mosquitto error " << rc << " in loop function.");
