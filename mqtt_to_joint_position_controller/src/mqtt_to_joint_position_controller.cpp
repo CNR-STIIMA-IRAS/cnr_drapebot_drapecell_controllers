@@ -51,29 +51,16 @@ namespace drapebot_controller
 
   MQTTToPositionController::~MQTTToPositionController()
   {
-    /////
-    file_stream_.close();
-    delete command_pub_;
-    ////
-    
     delete mqtt_drapebot_client_;  
   }
 
 
   bool MQTTToPositionController::init(hardware_interface::PositionJointInterface* hw, ros::NodeHandle& n)
   {
-    #ifdef WIN32  
-      //ROS_WARN_STREAM("GetCurrentProcess()   " << GetCurrentProcess());
-      //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) 
-    #endif
-
     try
     {
-      /////
-      command_pub_ = new realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>(n, "command", 4);
-      file_stream_.open("C:\\ws\\drapebot_ws\\data\\log_egm.csv");
-      /////
-
+      command_pub_.reset( new realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>(n, "command", 4) );
+    
       ctrl_.init(hw,n); 
 
       // ---- MQTT params ----
@@ -159,14 +146,6 @@ namespace drapebot_controller
   
   void MQTTToPositionController::update(const ros::Time& time, const ros::Duration& period)
   {
-
-    #ifdef WIN32  
-      //ROS_WARN_STREAM("GetCurrentProcess()   " << GetCurrentProcess());
-      //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) 
-    #endif
-
-    std::chrono::high_resolution_clock::time_point time_start_update = std::chrono::high_resolution_clock::now();
- 
     if (first_cycle_)
     {
       first_cycle_ = false;
@@ -181,7 +160,7 @@ namespace drapebot_controller
       return;
     }
 
-    int rc = mqtt_drapebot_client_->loop(1); //2023.06.06 Enrico Changed timeout from 4ms to 1 -> no timeout, immediate return
+    int rc = mqtt_drapebot_client_->loop(4);
     if ( rc != 0 )
     {
       ROS_WARN_STREAM_THROTTLE(2.0,"Mosquitto error " << rc << " in loop function.");
@@ -213,8 +192,6 @@ namespace drapebot_controller
       }
     }
 
-    std::chrono::high_resolution_clock::time_point time_point_1 = std::chrono::high_resolution_clock::now();
-
     // Read the new MQTT message and send the command to the robot
     memset(&command_from_mqtt_,0x0,sizeof(cnr::drapebot::drapebot_msg));
         
@@ -225,8 +202,6 @@ namespace drapebot_controller
       ctrl_.update(time,period);
       return;
     }
-
-    std::chrono::high_resolution_clock::time_point time_point_2 = std::chrono::high_resolution_clock::now();
 
     for (size_t i=0; i<(MSG_AXES_LENGTH-1); i++)
       j_pos_command_[i] =  command_from_mqtt_.joints_values_[i]; 
@@ -244,8 +219,6 @@ namespace drapebot_controller
     ctrl_.commands_buffer_.writeFromNonRT(j_pos_command_);
     ctrl_.update(time,period);
 
-    std::chrono::high_resolution_clock::time_point time_point_3 = std::chrono::high_resolution_clock::now();
-
     // Only for debug 
     std::vector<double> joint_states_(6);
     
@@ -261,35 +234,6 @@ namespace drapebot_controller
       command_pub_->unlockAndPublish();
     }
 
-    std::chrono::high_resolution_clock::time_point time_point_4 = std::chrono::high_resolution_clock::now();
-
-    std::chrono::high_resolution_clock::time_point time_end_update = std::chrono::high_resolution_clock::now();
-    
-    auto delta_time_update_ = std::chrono::duration_cast<std::chrono::microseconds>(time_end_update - time_start_update ).count();
-    auto delta_time_1_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_1 - time_start_update ).count();
-    auto delta_time_2_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_2 - time_point_1 ).count();
-    auto delta_time_3_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_3 - time_point_2 ).count();
-    auto delta_time_4_ = std::chrono::duration_cast<std::chrono::microseconds>(time_point_4 - time_point_3 ).count();
-
-    // write on file
-    file_stream_ << j_pos_command_.at(0) << " "
-                 << j_pos_command_.at(1) << " "
-                 << j_pos_command_.at(2) << " "
-                 << j_pos_command_.at(3) << " "
-                 << j_pos_command_.at(4) << " "
-                 << j_pos_command_.at(5) << " "
-                 << joint_states_.at(0) << " "
-                 << joint_states_.at(1) << " "
-                 << joint_states_.at(2) << " "
-                 << joint_states_.at(3) << " "
-                 << joint_states_.at(4) << " "
-                 << joint_states_.at(5) << " " 
-                 << delta_time_update_ << " " 
-                 << delta_time_1_ << " " 
-                 << delta_time_2_ << " " 
-                 << delta_time_3_ << " " 
-                 << delta_time_4_ << " " << std::endl;
-    ///
   }
     
 

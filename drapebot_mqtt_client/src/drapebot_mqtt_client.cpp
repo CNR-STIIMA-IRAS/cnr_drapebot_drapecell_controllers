@@ -85,8 +85,6 @@ namespace  cnr
         mqtt_msg_->joints_values_[5] = root["J5"].asDouble();
         mqtt_msg_->joints_values_[6] = root["E0"].asDouble();
         mqtt_msg_->counter_ = root["count"].asInt();
-
-        time_on_msg_ = std::chrono::high_resolution_clock::now();
       
         //setNewMessageAvailable(true);
         //setDataValid(true);   // Should be checked the length of the received data, but the length is not constant
@@ -113,10 +111,6 @@ namespace  cnr
     {
       try
       {
-        // Only for debug
-        file_stream_time_.open("C:\\ws\\drapebot_ws\\data\\log_egm_with_time.csv");
-        //
-
         mqtt_msg_enc_ = new cnr::drapebot::drapebot_msg;
         mqtt_msg_dec_ = new cnr::drapebot::drapebot_msg;
         
@@ -133,10 +127,6 @@ namespace  cnr
 
     MQTTDrapebotClient::~MQTTDrapebotClient()
     {  
-      // Only for debug  
-      file_stream_time_.close();
-      //
-
       delete mqtt_msg_dec_;
       delete mqtt_msg_enc_;
       delete drapebot_msg_decoder_;
@@ -212,20 +202,6 @@ namespace  cnr
             last_msg.counter_ = mqtt_msg_dec_->counter_;
 
             //drapebot_msg_decoder_->setNewMessageAvailable(false);
-
-            std::chrono::high_resolution_clock::time_point time_msg_consumed = std::chrono::high_resolution_clock::now();
-            auto delta_time_ = std::chrono::duration_cast<std::chrono::microseconds>(time_msg_consumed - drapebot_msg_decoder_->time_on_msg_ ).count();
-            ROS_WARN_STREAM_THROTTLE(0.5,"Delta time between last message received from MQTT at the time when the message is used:  " << 
-                             delta_time_ << "  milliseconds" );
-            
-            file_stream_time_ << delta_time_ << "  "
-                              << mqtt_msg_dec_->joints_values_[0] << "  "
-                              << mqtt_msg_dec_->joints_values_[1] << "  " 
-                              << mqtt_msg_dec_->joints_values_[2] << "  " 
-                              << mqtt_msg_dec_->joints_values_[3] << "  "
-                              << mqtt_msg_dec_->joints_values_[4] << "  "
-                              << mqtt_msg_dec_->joints_values_[5] << "  "
-                              << mqtt_msg_dec_->joints_values_[0] << std::endl;
 
             drapebot_msg_decoder_->mtx_.unlock();
 

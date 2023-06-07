@@ -73,10 +73,6 @@ namespace cnr
       void on_message(const struct mosquitto_message *msg) override;
       bool isFirstMsgRec(){return first_message_rec_;};
 
-      // Only for debug
-      std::chrono::high_resolution_clock::time_point time_on_msg_;
-      //
-
     private:
       cnr::drapebot::drapebot_msg* mqtt_msg_;
       bool first_message_rec_;
@@ -108,11 +104,7 @@ namespace cnr
       int publish(const void* payload, int& payload_len, const char* topic_name);
      
       bool isFirstMsgRec(){ return drapebot_msg_decoder_->isFirstMsgRec(); };
-      bool getLastReceivedMessage(cnr::drapebot::drapebot_msg& last_msg);
-
-      // Only for debug
-      std::ofstream file_stream_time_;
-      //
+      bool getLastReceivedMessage(cnr::drapebot::drapebot_msg& last_msg);  
     
     private:
       cnr::drapebot::DrapebotMsgDecoder* drapebot_msg_decoder_;

@@ -36,11 +36,6 @@
 #ifndef __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 #define __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 
-#ifdef WIN32
-  #include <windows.h>
-  #include <tchar.h> 
-#endif
-
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>
@@ -66,11 +61,8 @@ namespace drapebot_controller
 
     private:
 
-        //
-        realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>* command_pub_;
-        std::ofstream file_stream_;
-        //
-
+        std::shared_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>> command_pub_;
+      
         bool first_cycle_;
         bool topics_subscribed_;
 
