@@ -59,6 +59,8 @@ namespace drapebot_controller
   {
     try
     {
+      command_pub_.reset( new realtime_tools::RealtimePublisher<std_msgs::Float64MultiArray>(n, "command", 4) );
+    
       ctrl_.init(hw,n); 
 
       // ---- MQTT params ----
@@ -189,13 +191,15 @@ namespace drapebot_controller
         return;
       }
     }
-       
+
     // Read the new MQTT message and send the command to the robot
     memset(&command_from_mqtt_,0x0,sizeof(cnr::drapebot::drapebot_msg));
-
-    if (!mqtt_drapebot_client_->getLastReceivedMessage(command_from_mqtt_))
+        
+    if (!mqtt_drapebot_client_->isFirstMsgRec() || !mqtt_drapebot_client_->getLastReceivedMessage(command_from_mqtt_) )
     {
-      ROS_ERROR_THROTTLE(2.0,"Can't recover the last received message");
+      ROS_WARN_THROTTLE(2.0,"Can't recover the last received message OR first message not received yet.");
+      ctrl_.commands_buffer_.writeFromNonRT(j_pos_command_);
+      ctrl_.update(time,period);
       return;
     }
 
@@ -210,12 +214,26 @@ namespace drapebot_controller
       loss_packages_ += delta_package;
     }
     
-    ROS_WARN_STREAM_THROTTLE(2.0, "Lost packages: " << loss_packages_ );
-
     counter_ = command_from_mqtt_.counter_;
   
     ctrl_.commands_buffer_.writeFromNonRT(j_pos_command_);
     ctrl_.update(time,period);
+
+    // Only for debug 
+    std::vector<double> joint_states_(6);
+    
+    for (size_t i=0; i<(MSG_AXES_LENGTH-1); i++)
+      joint_states_.at(i) = ctrl_.joints_.at(i).getPosition(); 
+
+    if (command_pub_->trylock())
+    {
+      command_pub_->msg_.data.clear();
+      for(const double& j_pos : j_pos_command_)
+        command_pub_->msg_.data.push_back(j_pos);
+
+      command_pub_->unlockAndPublish();
+    }
+
   }
     
 
