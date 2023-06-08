@@ -33,11 +33,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef WIN32
-  #include <json.h>
-#else
-  #include <jsoncpp/json/json.h>
-#endif
+// #ifdef WIN32
+//   #include <json.h>
+// #else
+//   #include <jsoncpp/json/json.h>
+// #endif
 
 #include <chrono>
 #include <algorithm>
@@ -45,6 +45,7 @@
 #include <pluginlib/class_list_macros.hpp>
 #include <joint_state_controller/joint_state_controller.h>
 
+#include <drapebot_mqtt_client/json.hpp>
 #include <egm_joint_state_to_mqtt_controller/egm_joint_state_to_mqtt_controller.h>
 
 
@@ -202,19 +203,33 @@ namespace drapebot_controller
 
     j_pos_feedback.counter_ = counter_;
 
-    Json::Value root;
+    // Json::Value root;
     
-    root["J0"] =  j_pos_feedback.joints_values_[0];
-    root["J1"] =  j_pos_feedback.joints_values_[1];
-    root["J2"] =  j_pos_feedback.joints_values_[2];
-    root["J3"] =  j_pos_feedback.joints_values_[3];
-    root["J4"] =  j_pos_feedback.joints_values_[4];
-    root["J5"] =  j_pos_feedback.joints_values_[5];
-    root["E0"] =  j_pos_feedback.joints_values_[6];
-    root["count"] = j_pos_feedback.counter_;
+    // root["J0"] =  j_pos_feedback.joints_values_[0];
+    // root["J1"] =  j_pos_feedback.joints_values_[1];
+    // root["J2"] =  j_pos_feedback.joints_values_[2];
+    // root["J3"] =  j_pos_feedback.joints_values_[3];
+    // root["J4"] =  j_pos_feedback.joints_values_[4];
+    // root["J5"] =  j_pos_feedback.joints_values_[5];
+    // root["E0"] =  j_pos_feedback.joints_values_[6];
+    // root["count"] = j_pos_feedback.counter_;
     
-    Json::StreamWriterBuilder builder;
-    const std::string json_file = Json::writeString(builder, root);
+    // Json::StreamWriterBuilder builder;
+    // const std::string json_file = Json::writeString(builder, root);
+
+    nlohmann::json data;
+    
+    data["J0"] =  j_pos_feedback.joints_values_[0];
+    data["J1"] =  j_pos_feedback.joints_values_[1];
+    data["J2"] =  j_pos_feedback.joints_values_[2];
+    data["J3"] =  j_pos_feedback.joints_values_[3];
+    data["J4"] =  j_pos_feedback.joints_values_[4];
+    data["J5"] =  j_pos_feedback.joints_values_[5];
+    data["E0"] =  j_pos_feedback.joints_values_[6];
+    data["count"] = j_pos_feedback.counter_;
+    
+    const std::string json_file = data.dump();
+
     
     int payload_len_ = json_file.length() + 1;
     char* payload_ = new char[ payload_len_ ];
@@ -227,9 +242,6 @@ namespace drapebot_controller
 
     counter_++;
     
-    //ROS_WARN_STREAM_THROTTLE(2.0,"counter:  " << counter_);
-    //cnr::drapebot::toc(); 
-
     delete payload_;
 
   }

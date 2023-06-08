@@ -33,58 +33,70 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef WIN32
-  #include <json.h>
-#else
-  #include <jsoncpp/json/json.h>
-#endif
+// #ifdef WIN32
+//   #include <json.h>
+// #else
+//   #include <jsoncpp/json/json.h>
+// #endif
 
 #include <ros/ros.h>
 
+#include <drapebot_mqtt_client/json.hpp>
 #include <drapebot_mqtt_client/drapebot_mqtt_client.h>
 
 namespace  cnr
 {
   namespace drapebot
   {
-    void tic(int mode) 
-    {
-      static std::chrono::high_resolution_clock::time_point t_start;
+    // void tic(int mode) 
+    // {
+    //   static std::chrono::high_resolution_clock::time_point t_start;
     
-      if (mode==0)
-          t_start = std::chrono::high_resolution_clock::now();
-      else 
-      {
-        auto t_end = std::chrono::high_resolution_clock::now();
-        ROS_WARN_STREAM_THROTTLE(1.0, "Elapsed time is " << (t_end-t_start).count()*1E-9 << "  seconds" );
-      }
-    }
+    //   if (mode==0)
+    //       t_start = std::chrono::high_resolution_clock::now();
+    //   else 
+    //   {
+    //     auto t_end = std::chrono::high_resolution_clock::now();
+    //     ROS_WARN_STREAM_THROTTLE(1.0, "Elapsed time is " << (t_end-t_start).count()*1E-9 << "  seconds" );
+    //   }
+    // }
 
-    void toc() 
-    { 
-      tic(1); 
-    }
+    // void toc() 
+    // { 
+    //   tic(1); 
+    // }
 
     void DrapebotMsgDecoder::on_message(const struct mosquitto_message *msg)
     {
       char* buffer = new char[msg->payloadlen];
       memcpy(buffer, msg->payload, msg->payloadlen);
     
-      Json::Reader reader;
-      Json::Value root;
+      // Json::Reader reader;
+      // Json::Value root;
     
-      reader.parse(buffer,root);
+      // reader.parse(buffer,root);
+
+      nlohmann::json data = nlohmann::json::parse(buffer);
       
       if (mtx_.try_lock_for(std::chrono::milliseconds(4))) //try to lock mutex for 4ms
       {
-        mqtt_msg_->joints_values_[0] = root["J0"].asDouble();
-        mqtt_msg_->joints_values_[1] = root["J1"].asDouble();
-        mqtt_msg_->joints_values_[2] = root["J2"].asDouble();
-        mqtt_msg_->joints_values_[3] = root["J3"].asDouble();
-        mqtt_msg_->joints_values_[4] = root["J4"].asDouble();
-        mqtt_msg_->joints_values_[5] = root["J5"].asDouble();
-        mqtt_msg_->joints_values_[6] = root["E0"].asDouble();
-        mqtt_msg_->counter_ = root["count"].asInt();
+        // mqtt_msg_->joints_values_[0] = root["J0"].asDouble();
+        // mqtt_msg_->joints_values_[1] = root["J1"].asDouble();
+        // mqtt_msg_->joints_values_[2] = root["J2"].asDouble();
+        // mqtt_msg_->joints_values_[3] = root["J3"].asDouble();
+        // mqtt_msg_->joints_values_[4] = root["J4"].asDouble();
+        // mqtt_msg_->joints_values_[5] = root["J5"].asDouble();
+        // mqtt_msg_->joints_values_[6] = root["E0"].asDouble();
+        // mqtt_msg_->counter_ = root["count"].asInt();
+
+        mqtt_msg_->joints_values_[0] = data["J0"];
+        mqtt_msg_->joints_values_[1] = data["J1"];
+        mqtt_msg_->joints_values_[2] = data["J2"];
+        mqtt_msg_->joints_values_[3] = data["J3"];
+        mqtt_msg_->joints_values_[4] = data["J4"];
+        mqtt_msg_->joints_values_[5] = data["J5"];
+        mqtt_msg_->joints_values_[6] = data["E0"];
+        mqtt_msg_->counter_ = data["count"];
       
         //setNewMessageAvailable(true);
         //setDataValid(true);   // Should be checked the length of the received data, but the length is not constant
