@@ -43,7 +43,7 @@ include_directories(
 
 if(WIN32)
   include_directories("C:\\ws\\mosquitto\\include\\")
-  include_directories("C:\\ws\\jsoncpp\\include\\json\\")
+  #include_directories("C:\\ws\\jsoncpp\\include\\json\\")
 endif()
 
 
@@ -54,13 +54,13 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 
 if(WIN32)
   target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\mosquitto-build\\lib\\")
-  target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\jsoncpp-build\\build\\lib\\Release\\")
+  #target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\jsoncpp-build\\build\\lib\\Release\\")
 endif()
 
 target_link_libraries(${PROJECT_NAME} 
   ${catkin_LIBRARIES}
   mosquitto
-  jsoncpp
+  #jsoncpp
 )
 
 # Install

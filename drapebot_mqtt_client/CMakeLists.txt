@@ -25,7 +25,7 @@ include_directories( include
 
 if(WIN32)
   include_directories("C:\\ws\\mosquitto\\include\\")
-  include_directories("C:\\ws\\jsoncpp\\include\\json\\")
+  #include_directories("C:\\ws\\jsoncpp\\include\\json\\")
 endif()
 
 ## Declare a C++ library
@@ -35,13 +35,12 @@ add_library(${PROJECT_NAME}
 
 if(WIN32)
   target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\mosquitto-build\\lib\\")
-  target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\jsoncpp-build\\build\\lib\\Release\\")
+  #target_link_directories(${PROJECT_NAME} PUBLIC "C:\\ws\\jsoncpp-build\\build\\lib\\Release\\")
 endif()
 
 target_link_libraries(${PROJECT_NAME} 
   ${catkin_LIBRARIES}
   mosquitto
-  jsoncpp
 )
 
 ################################################

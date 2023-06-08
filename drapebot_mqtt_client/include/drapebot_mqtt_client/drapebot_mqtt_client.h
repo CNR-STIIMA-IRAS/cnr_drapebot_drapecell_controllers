@@ -54,8 +54,8 @@ namespace cnr
   namespace drapebot
   {
 
-    void tic(int mode=0);
-    void toc();
+    // void tic(int mode=0);
+    // void toc();
 
     struct drapebot_msg 
     {
