@@ -65,6 +65,8 @@ namespace drapebot_controller
     std::vector<hardware_interface::JointStateHandle> joint_state_;
     std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState> > realtime_pub_;
     ros::Time last_publish_time_;
+    
+    bool use_json_;
     double publish_rate_;
     size_t num_hw_joints_; ///< Number of joints present in the JointStateInterface, excluding extra joints
     unsigned long int counter_; //number of packages sent through MQTT

@@ -19,13 +19,14 @@ int main(int argc, char **argv)
     std::string mqtt_command_topic = "/robot_1/command";
     std::string mqtt_feedback_topic = "/robot_1/feedback";
     std::string mqtt_feedback_topic2 = "/robot_2/feedback";
+    bool use_json = true;
 
     ROS_INFO_STREAM("Connencting mqtt: "<< client_id << ", host: " << host_str << ", port: " << port);
-    cnr::drapebot::MQTTDrapebotClient mqtt_drapebot_client_(client_id.c_str(), host_str.c_str(), port);
+    cnr::drapebot::MQTTDrapebotClient mqtt_drapebot_client_(client_id.c_str(), host_str.c_str(), port, use_json);
     ROS_INFO_STREAM("Connencted to: "<< client_id << ": " << host_str);
 
     ROS_INFO_STREAM("Connencting mqtt: "<< client_id << ", host: " << host_str << ", port: " << port);
-    cnr::drapebot::MQTTDrapebotClient mqtt_drapebot_client2_(client_id2.c_str(), host_str.c_str(), port);
+    cnr::drapebot::MQTTDrapebotClient mqtt_drapebot_client2_(client_id2.c_str(), host_str.c_str(), port, use_json);
     ROS_INFO_STREAM("Connencted to: "<< client_id << ": " << host_str);
 
     if (mqtt_drapebot_client_.subscribe(NULL, mqtt_command_topic.c_str(), 1) != 0)

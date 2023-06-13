@@ -135,8 +135,14 @@ namespace drapebot_controller
         ROS_WARN_STREAM("port not found under " + controller_nh.getNamespace() + "/port. Using defalut broker address: "+ std::to_string( port));      
       }    
 
+      if (!controller_nh.getParam("use_json",use_json_))
+      {
+        use_json_ = true;
+        ROS_WARN_STREAM("use json flag not found " + controller_nh.getNamespace() + "/use_json. Using defalut json flag: true " );      
+      }   
+
       ROS_INFO_STREAM("Connencting mqtt: "<< client_id << ", host: " << host_str << ", port: " << port);
-      mqtt_drapebot_client_ = new cnr::drapebot::MQTTDrapebotClient(client_id.c_str(), host_str.c_str(), port);
+      mqtt_drapebot_client_ = new cnr::drapebot::MQTTDrapebotClient(client_id.c_str(), host_str.c_str(), port, use_json_);
       ROS_INFO_STREAM("Connencted to: "<< client_id << ": " << host_str);
       
       if (!controller_nh.getParam("mqtt_feedback_topic", mqtt_feedback_topic_))
@@ -171,8 +177,6 @@ namespace drapebot_controller
 
   void EgmJointStateToMQTTController::update(const ros::Time& time, const ros::Duration& /*period*/)
   {
-    //cnr::drapebot::tic();
-  
     // limit rate of publishing
     if (publish_rate_ > 0.0 && last_publish_time_ + ros::Duration(1.0/publish_rate_) < time)
     {
@@ -203,47 +207,46 @@ namespace drapebot_controller
 
     j_pos_feedback.counter_ = counter_;
 
-    // Json::Value root;
-    
-    // root["J0"] =  j_pos_feedback.joints_values_[0];
-    // root["J1"] =  j_pos_feedback.joints_values_[1];
-    // root["J2"] =  j_pos_feedback.joints_values_[2];
-    // root["J3"] =  j_pos_feedback.joints_values_[3];
-    // root["J4"] =  j_pos_feedback.joints_values_[4];
-    // root["J5"] =  j_pos_feedback.joints_values_[5];
-    // root["E0"] =  j_pos_feedback.joints_values_[6];
-    // root["count"] = j_pos_feedback.counter_;
-    
-    // Json::StreamWriterBuilder builder;
-    // const std::string json_file = Json::writeString(builder, root);
+    int rc;
 
-    nlohmann::json data;
-    
-    data["J0"] =  j_pos_feedback.joints_values_[0];
-    data["J1"] =  j_pos_feedback.joints_values_[1];
-    data["J2"] =  j_pos_feedback.joints_values_[2];
-    data["J3"] =  j_pos_feedback.joints_values_[3];
-    data["J4"] =  j_pos_feedback.joints_values_[4];
-    data["J5"] =  j_pos_feedback.joints_values_[5];
-    data["E0"] =  j_pos_feedback.joints_values_[6];
-    data["count"] = j_pos_feedback.counter_;
-    
-    const std::string json_file = data.dump();
+    if (use_json_)
+    {
+      nlohmann::json data;
+      
+      data["J0"] =  j_pos_feedback.joints_values_[0];
+      data["J1"] =  j_pos_feedback.joints_values_[1];
+      data["J2"] =  j_pos_feedback.joints_values_[2];
+      data["J3"] =  j_pos_feedback.joints_values_[3];
+      data["J4"] =  j_pos_feedback.joints_values_[4];
+      data["J5"] =  j_pos_feedback.joints_values_[5];
+      data["E0"] =  j_pos_feedback.joints_values_[6];
+      data["count"] = j_pos_feedback.counter_;
+      
+      const std::string json_file = data.dump();
+
+      int payload_len_ = json_file.length() + 1;
+      char* payload_ = new char[ payload_len_ ];
+      strcpy(payload_, json_file.c_str());
+
+      rc = mqtt_drapebot_client_->publish(payload_, payload_len_, mqtt_feedback_topic_.c_str());
+      delete payload_;
+
+    }
+    else
+    {
+      int payload_len_ = sizeof(j_pos_feedback);
+
+      void* payload_ = malloc( payload_len_ );
+      memcpy(payload_, &j_pos_feedback, payload_len_);  
+      rc = mqtt_drapebot_client_->publish(payload_, payload_len_, mqtt_feedback_topic_.c_str());
+    }
 
     
-    int payload_len_ = json_file.length() + 1;
-    char* payload_ = new char[ payload_len_ ];
-    strcpy(payload_, json_file.c_str());
-
-    int rc = mqtt_drapebot_client_->publish(payload_, payload_len_, mqtt_feedback_topic_.c_str());
-
     if ( rc != 0)
       ROS_ERROR_STREAM("MQTT publish function returned: " << rc);
 
     counter_++;
     
-    delete payload_;
-
   }
 
   void EgmJointStateToMQTTController::addExtraJoints(const ros::NodeHandle& nh, sensor_msgs::JointState& msg)
