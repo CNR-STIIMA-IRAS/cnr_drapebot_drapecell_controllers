@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(drapebot_mqtt_client)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Release)
 
+message(STATUS "${PROJECT_NAME} CMAKE CXX STANDARD: ${CMAKE_CXX_STANDARD}")
 
 find_package(catkin REQUIRED COMPONENTS 
             roscpp

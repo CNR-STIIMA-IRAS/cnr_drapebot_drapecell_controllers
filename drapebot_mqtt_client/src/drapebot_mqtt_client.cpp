@@ -33,7 +33,16 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+ 
+#include <boost/shared_ptr.hpp>
+
+namespace boost {
+#ifdef BOOST_NO_EXCEPTIONS
+void throw_exception( std::exception const & e ) { throw 11; };
+#endif
+}
+
+#include <ros/console.h>
 
 #include <drapebot_mqtt_client/json.hpp>
 #include <drapebot_mqtt_client/drapebot_mqtt_client.h>
