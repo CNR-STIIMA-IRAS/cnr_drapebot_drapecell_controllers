@@ -224,21 +224,21 @@ namespace drapebot_controller
       
       const std::string json_file = data.dump();
 
-      int payload_len_ = json_file.length() + 1;
-      char* payload_ = new char[ payload_len_ ];
-      strcpy(payload_, json_file.c_str());
+      int payload_len = json_file.length() + 1;
+      char* payload = new char[ payload_len ];
+      strcpy(payload, json_file.c_str());
 
-      rc = mqtt_drapebot_client_->publish(payload_, payload_len_, mqtt_feedback_topic_.c_str());
-      delete payload_;
+      rc = mqtt_drapebot_client_->publish(payload, payload_len, mqtt_feedback_topic_.c_str());
+      delete payload;
 
     }
     else
     {
-      int payload_len_ = sizeof(j_pos_feedback);
-
-      void* payload_ = malloc( payload_len_ );
-      memcpy(payload_, &j_pos_feedback, payload_len_);  
-      rc = mqtt_drapebot_client_->publish(payload_, payload_len_, mqtt_feedback_topic_.c_str());
+      int payload_len = sizeof(j_pos_feedback);
+      void* payload = malloc( payload_len );
+      memcpy(payload, &j_pos_feedback, payload_len);  
+      rc = mqtt_drapebot_client_->publish(payload, payload_len, mqtt_feedback_topic_.c_str());
+      delete payload;
     }
 
     
