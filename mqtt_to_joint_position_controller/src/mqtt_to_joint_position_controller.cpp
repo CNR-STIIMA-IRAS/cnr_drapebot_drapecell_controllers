@@ -92,7 +92,14 @@ namespace drapebot_controller
         ROS_WARN_STREAM("mqtt_command_topic not found under " + n.getNamespace() + "/mqtt_command_topic . Using defalut broker address: "+ mqtt_command_topic_);      
       }
       
-      mqtt_drapebot_client_ = new cnr::drapebot::MQTTDrapebotClient(client_id.c_str(), host_str.c_str(), port);
+      bool use_json;
+      if (!n.getParam("use_json",use_json))
+      {
+        use_json = true;
+        ROS_WARN_STREAM("use json flag not found " + n.getNamespace() + "/use_json. Using defalut json flag: true " );      
+      }   
+
+      mqtt_drapebot_client_ = new cnr::drapebot::MQTTDrapebotClient(client_id.c_str(), host_str.c_str(), port, use_json);
       ROS_INFO_STREAM("Connencted to: "<< client_id << ": " << host_str);
           
       j_pos_command_.resize(MSG_AXES_LENGTH-1); // The seventh axis is not necessary in DrapeCell setup
@@ -160,7 +167,7 @@ namespace drapebot_controller
       return;
     }
 
-    int rc = mqtt_drapebot_client_->loop(4);
+    int rc = mqtt_drapebot_client_->loop(1);
     if ( rc != 0 )
     {
       ROS_WARN_STREAM_THROTTLE(2.0,"Mosquitto error " << rc << " in loop function.");

@@ -45,7 +45,6 @@
 
 #include <cnr_mqtt_client/cnr_mqtt_client.h>
 
-#define MAX_PAYLOAD_SIZE 1024
 #define MSG_AXES_LENGTH 7 // The length is given by 6 axes robot + linear axis
 #define DEFAULT_KEEP_ALIVE 60
 
@@ -54,8 +53,8 @@ namespace cnr
   namespace drapebot
   {
 
-    void tic(int mode=0);
-    void toc();
+    // void tic(int mode=0);
+    // void toc();
 
     struct drapebot_msg 
     {
@@ -67,7 +66,7 @@ namespace cnr
     class DrapebotMsgDecoder: public cnr::mqtt::MsgDecoder
     {
     public:
-      DrapebotMsgDecoder(cnr::drapebot::drapebot_msg* mqtt_msg): mqtt_msg_(mqtt_msg), first_message_rec_(false) {};
+      DrapebotMsgDecoder(cnr::drapebot::drapebot_msg* mqtt_msg, const bool use_json): mqtt_msg_(mqtt_msg), use_json_(use_json), first_message_rec_(false) {};
       
       // The method should be reimplemented on the base of the application
       void on_message(const struct mosquitto_message *msg) override;
@@ -75,6 +74,7 @@ namespace cnr
 
     private:
       cnr::drapebot::drapebot_msg* mqtt_msg_;
+      bool use_json_;
       bool first_message_rec_;
     };
 
@@ -93,7 +93,7 @@ namespace cnr
     class MQTTDrapebotClient
     {
     public:
-      MQTTDrapebotClient (const char *id, const char *host, int port, int keepalive = 60);
+      MQTTDrapebotClient (const char *id, const char *host, const int port, const bool use_json, int keepalive = 60);
       ~MQTTDrapebotClient();
 
       int stop();

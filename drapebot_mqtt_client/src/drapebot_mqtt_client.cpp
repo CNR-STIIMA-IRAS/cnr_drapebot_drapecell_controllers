@@ -33,58 +33,61 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef WIN32
-  #include <json.h>
-#else
-  #include <jsoncpp/json/json.h>
+ 
+#include <boost/shared_ptr.hpp>
+
+namespace boost {
+#ifdef BOOST_NO_EXCEPTIONS
+void throw_exception( std::exception const & e ) { throw 11; };
 #endif
+}
 
-#include <ros/ros.h>
+#include <ros/console.h>
 
+#include <drapebot_mqtt_client/json.hpp>
 #include <drapebot_mqtt_client/drapebot_mqtt_client.h>
 
 namespace  cnr
 {
   namespace drapebot
   {
-    void tic(int mode) 
-    {
-      static std::chrono::high_resolution_clock::time_point t_start;
+    // void tic(int mode) 
+    // {
+    //   static std::chrono::high_resolution_clock::time_point t_start;
     
-      if (mode==0)
-          t_start = std::chrono::high_resolution_clock::now();
-      else 
-      {
-        auto t_end = std::chrono::high_resolution_clock::now();
-        ROS_WARN_STREAM_THROTTLE(1.0, "Elapsed time is " << (t_end-t_start).count()*1E-9 << "  seconds" );
-      }
-    }
+    //   if (mode==0)
+    //       t_start = std::chrono::high_resolution_clock::now();
+    //   else 
+    //   {
+    //     auto t_end = std::chrono::high_resolution_clock::now();
+    //     ROS_WARN_STREAM_THROTTLE(1.0, "Elapsed time is " << (t_end-t_start).count()*1E-9 << "  seconds" );
+    //   }
+    // }
 
-    void toc() 
-    { 
-      tic(1); 
-    }
+    // void toc() 
+    // { 
+    //   tic(1); 
+    // }
 
-    void DrapebotMsgDecoder::on_message(const struct mosquitto_message *msg)
+  void DrapebotMsgDecoder::on_message(const struct mosquitto_message *msg)
+  {
+    char* buffer = new char[msg->payloadlen];
+    memcpy(buffer, msg->payload, msg->payloadlen);
+
+    if (use_json_)
     {
-      char* buffer = new char[msg->payloadlen];
-      memcpy(buffer, msg->payload, msg->payloadlen);
+      nlohmann::json data = nlohmann::json::parse(buffer);
     
-      Json::Reader reader;
-      Json::Value root;
-    
-      reader.parse(buffer,root);
-      
-      if (mtx_.try_lock_for(std::chrono::milliseconds(4))) //try to lock mutex for 4ms
+      if (mtx_.try_lock_for(std::chrono::milliseconds(2))) //try to lock mutex for 2ms
       {
-        mqtt_msg_->joints_values_[0] = root["J0"].asDouble();
-        mqtt_msg_->joints_values_[1] = root["J1"].asDouble();
-        mqtt_msg_->joints_values_[2] = root["J2"].asDouble();
-        mqtt_msg_->joints_values_[3] = root["J3"].asDouble();
-        mqtt_msg_->joints_values_[4] = root["J4"].asDouble();
-        mqtt_msg_->joints_values_[5] = root["J5"].asDouble();
-        mqtt_msg_->joints_values_[6] = root["E0"].asDouble();
-        mqtt_msg_->counter_ = root["count"].asInt();
+        mqtt_msg_->joints_values_[0] = data["J0"];
+        mqtt_msg_->joints_values_[1] = data["J1"];
+        mqtt_msg_->joints_values_[2] = data["J2"];
+        mqtt_msg_->joints_values_[3] = data["J3"];
+        mqtt_msg_->joints_values_[4] = data["J4"];
+        mqtt_msg_->joints_values_[5] = data["J5"];
+        mqtt_msg_->joints_values_[6] = data["E0"];
+        mqtt_msg_->counter_ = data["count"];
       
         //setNewMessageAvailable(true);
         //setDataValid(true);   // Should be checked the length of the received data, but the length is not constant
@@ -98,7 +101,43 @@ namespace  cnr
       {
         ROS_WARN_STREAM("Can't lock mutex in DrapebotMsgDecoder::on_message timeout reached, last MQTT message not recovered." );
       }
+    }
+    else
+    {
+      int message_size = sizeof(drapebot_msg); 
     
+      if ( msg->payloadlen == message_size )
+      {
+        if(mtx_.try_lock_for(std::chrono::milliseconds(2)))
+        {
+          for(size_t id=0; id<MSG_AXES_LENGTH; id++)        
+          {
+            double joint;
+            memcpy(&joint, (char *)msg->payload + id * (sizeof(double)), sizeof(double));
+            mqtt_msg_->joints_values_[id] = joint;
+          }
+          
+          unsigned long int counter;
+          memcpy(&counter, (char *)msg->payload + MSG_AXES_LENGTH * sizeof(double), sizeof(unsigned long int));  
+          mqtt_msg_->counter_ = counter;
+          
+          if (!first_message_rec_)
+            first_message_rec_ = true;
+
+          mtx_.unlock();
+        }
+        else
+        {
+          ROS_WARN_STREAM("Can't lock mutex in DrapebotMsgDecoder::on_message timeout reached, last MQTT message not recovered." );
+        }
+      }
+      else
+      {
+        ROS_WARN("The message received from MQTT has a wrong length");
+      }
+
+    }
+      
       delete buffer;
     }
     
@@ -107,7 +146,7 @@ namespace  cnr
       // Nothing to do here
     }
 
-    MQTTDrapebotClient::MQTTDrapebotClient(const char *id, const char *host, int port, int keepalive)
+    MQTTDrapebotClient::MQTTDrapebotClient(const char *id, const char *host, const int port, const bool use_json, int keepalive)
     {
       try
       {
@@ -115,7 +154,7 @@ namespace  cnr
         mqtt_msg_dec_ = new cnr::drapebot::drapebot_msg;
         
         drapebot_msg_encoder_ = new cnr::drapebot::DrapebotMsgEncoder(mqtt_msg_enc_);
-        drapebot_msg_decoder_ = new cnr::drapebot::DrapebotMsgDecoder(mqtt_msg_dec_);
+        drapebot_msg_decoder_ = new cnr::drapebot::DrapebotMsgDecoder(mqtt_msg_dec_, use_json);
 
         mqtt_client_ = new cnr::mqtt::MQTTClient(id, host, port, drapebot_msg_encoder_, drapebot_msg_decoder_);
       }
@@ -192,27 +231,22 @@ namespace  cnr
           return false;
         }
 
-        //if (drapebot_msg_decoder_->isNewMessageAvailable() && drapebot_msg_decoder_->isDataValid() )
-        //{
-          if (drapebot_msg_decoder_->mtx_.try_lock_for(std::chrono::milliseconds(4))) //try to lock mutex for 4ms
-          {
-            for (size_t id=0; id<MSG_AXES_LENGTH; id++)
-              last_msg.joints_values_[id] = mqtt_msg_dec_->joints_values_[id];
+        if (drapebot_msg_decoder_->mtx_.try_lock_for(std::chrono::milliseconds(2))) //try to lock mutex for 4ms
+        {
+          for (size_t id=0; id<MSG_AXES_LENGTH; id++)
+            last_msg.joints_values_[id] = mqtt_msg_dec_->joints_values_[id];
 
-            last_msg.counter_ = mqtt_msg_dec_->counter_;
+          last_msg.counter_ = mqtt_msg_dec_->counter_;
 
-            //drapebot_msg_decoder_->setNewMessageAvailable(false);
+          drapebot_msg_decoder_->mtx_.unlock();
 
-            drapebot_msg_decoder_->mtx_.unlock();
-
-            return true;
-          }
-          else
-          {
-             ROS_WARN_STREAM("Can't lock mutex MQTTDrapebotClient::getLastReceivedMessage. Last message received from MQTT not recovered." );
-             return false;
-          }          
-        //}
+          return true;
+        }
+        else
+        {
+            ROS_WARN_STREAM("Can't lock mutex MQTTDrapebotClient::getLastReceivedMessage. Last message received from MQTT not recovered." );
+            return false;
+        }          
       
       }
 
