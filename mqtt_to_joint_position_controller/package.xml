@@ -24,6 +24,7 @@
   <!-- The export tag contains other, unspecified, tags -->
   <depend>controller_interface</depend>
   <depend>drapebot_mqtt_client</depend>
+  <depend>sensor_msgs</depend>
   <export>
     <controller_interface plugin="${prefix}/mqtt_to_joint_position_controller_plugin.xml"/>
   </export>
