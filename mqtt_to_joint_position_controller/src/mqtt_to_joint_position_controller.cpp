@@ -272,12 +272,6 @@ namespace drapebot_controller
       if ( first_ros_cmd_msg_rec_ )
       {
         j_pos_command_ = j_pos_command_ros_;
-        ROS_WARN_STREAM("Writing command: " << j_pos_command_ros_.at(0) << " " 
-                                            << j_pos_command_ros_.at(1) << " " 
-                                            << j_pos_command_ros_.at(2) << " " 
-                                            << j_pos_command_ros_.at(3) << " " 
-                                            << j_pos_command_ros_.at(4) << " " 
-                                            << j_pos_command_ros_.at(5) << " " );
       }
       else
         ROS_WARN_STREAM_THROTTLE(2.0,"First command message not yet received on topic: " << ros_command_topic_);
