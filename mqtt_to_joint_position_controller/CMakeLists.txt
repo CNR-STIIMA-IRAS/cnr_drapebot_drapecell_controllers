@@ -9,6 +9,7 @@ set(CMAKE_BUILD_TYPE Release)
 find_package(catkin REQUIRED COMPONENTS
 	  position_controllers
 	  roscpp
+    sensor_msgs
 	  pluginlib
 	  controller_interface
 	  drapebot_mqtt_client
@@ -17,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS position_controllers roscpp controller_interface drapebot_mqtt_client
+  CATKIN_DEPENDS position_controllers roscpp sensor_msgs controller_interface drapebot_mqtt_client
 #  DEPENDS system_lib
 )
 

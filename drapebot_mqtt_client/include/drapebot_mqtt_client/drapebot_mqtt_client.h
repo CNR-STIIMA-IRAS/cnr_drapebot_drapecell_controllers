@@ -97,7 +97,7 @@ namespace cnr
       ~MQTTDrapebotClient();
 
       int stop();
-      int loop(int timeout=2000);
+      int loop(int timeout=4);
       int reconnect();  
       int subscribe(int *mid, const char *sub, int qos);
       int unsubscribe(int *mid, const char *sub);

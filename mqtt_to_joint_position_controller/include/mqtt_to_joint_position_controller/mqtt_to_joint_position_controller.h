@@ -36,6 +36,7 @@
 #ifndef __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 #define __MQTT_TO_JOINT_POSITION_CONTROLLER_H__
 
+#include <sensor_msgs/JointState.h>
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>
@@ -65,15 +66,23 @@ namespace drapebot_controller
       
         bool first_cycle_;
         bool topics_subscribed_;
+        bool first_ros_cmd_msg_rec_;
+        bool use_ros_command_;
 
         unsigned long int counter_, loss_packages_;
 
         std::string mqtt_command_topic_;
+        std::string ros_command_topic_;
         cnr::drapebot::drapebot_msg command_from_mqtt_;
         cnr::drapebot::MQTTDrapebotClient* mqtt_drapebot_client_;
 
-        std::vector<double> j_pos_command_;               
+        std::vector<std::string> joint_names_;
+        std::vector<double> j_pos_command_;   
+        std::vector<double> j_pos_command_ros_;            
         position_controllers::JointGroupPositionController ctrl_;
+
+        ros::Subscriber robot_cmd_ros_sub_;    
+        void CmdJointStatejCallback(const sensor_msgs::JointState::ConstPtr& msg);
     };
 
 } //end drapebot_controller
